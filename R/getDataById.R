@@ -4,7 +4,7 @@
 #' @param id integer BacDive ID
 #' @param template_path character Path to the record template.
 #'        Defaults to inst/extdata/template.csv.
-#' @param debug character if TRUE write messages to console. Defaults to
+#' @param verbose character if TRUE write messages to console. Defaults to
 #'        FALSE.
 #'
 #' @return list of lists of BacDive Data
@@ -18,19 +18,22 @@
 #' getDataById(access_object, 12345)
 getDataById <- function(access_object, id,
                         template_path = "inst/extdata/template.csv",
-                        debug = FALSE) {
+                        verbose = FALSE) {
 
     tryCatch({
         response <- fetch(access_object, id)
 
-        if (debug)
+        if (verbose)
             message(paste("[DEBUG] Fetched", response$count, "records"))
 
         if (response$count > 0)
-            .formatRecord(response$results[1], .readTemplate(template_path),
-                          debug)
+            .formatRecord(response$results[[as.character(id)]],
+                          .readTemplate(template_path),
+                          verbose)
 
     }, error = function(e) {
         message(paste("[ERROR]", e$message))
+    }, warning = function(w) {
+      message(paste("[WARNING]", w$message))
     })
 }

@@ -7,14 +7,14 @@
 .toVector(a_string)
 }
 \arguments{
-\item{a_string}{character representing a comma-separated list}
+\item{a_string}{character representing a comma-separated vector}
 }
 \value{
-list of character
+vector of character
 }
 \description{
-Attempts to parse items separated by double quotes
+Attempts to parse items separated by special double quotes
 }
 \examples{
-toVector('“Isolation, sample, environment”, isolation')
+.toVector('“Isolation, sample, environment”, isolation')
 }

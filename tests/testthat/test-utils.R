@@ -58,21 +58,21 @@ test_that("getValue returns a value given a key with a comma.", {
                                       "country"))
 })
 
-test_that("toVector returns a single value when given no commas or quotes.", {
+test_that(".toVector returns a single value when given no commas or quotes.", {
     expect_equal("one", BacDiveR:::.toVector("one"))
 })
 
-test_that("toVector returns n-1 values when given n commas.", {
+test_that(".toVector returns n-1 values when given n commas.", {
   expect_equal(c("one", "two", "three", "four"),
                BacDiveR:::.toVector("one, two, three, four"))
 })
 
-test_that("toVector doesn't split quoted phrases.", {
+test_that(".toVector doesn't split quoted phrases.", {
   expect_equal(c("one", "two three", "four"),
                BacDiveR:::.toVector("one, “two three”, four"))
 })
 
-test_that("toVector doesn't split quoted phrases with commas.", {
+test_that(".toVector doesn't split quoted phrases with commas.", {
   expect_equal(c("one", "two, three", "four"),
                BacDiveR:::.toVector("one, “two, three”, four"))
 })

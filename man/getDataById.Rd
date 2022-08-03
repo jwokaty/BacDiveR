@@ -8,7 +8,7 @@ getDataById(
   access_object,
   id,
   template_path = "inst/extdata/template.csv",
-  debug = FALSE
+  verbose = FALSE
 )
 }
 \arguments{
@@ -19,7 +19,7 @@ getDataById(
 \item{template_path}{character Path to the record template.
 Defaults to inst/extdata/template.csv.}
 
-\item{debug}{character if TRUE write messages to console. Defaults to
+\item{verbose}{character if TRUE write messages to console. Defaults to
 FALSE.}
 }
 \value{

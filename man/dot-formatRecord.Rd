@@ -2,22 +2,22 @@
 % Please edit documentation in R/utils.R
 \name{.formatRecord}
 \alias{.formatRecord}
-\title{Use template CSV to create functions to apply on BacDive records}
+\title{Use template CSV to get keys or functions to process BacDive data}
 \usage{
-.formatRecord(bacdive_data, record_template, debug = FALSE)
+.formatRecord(bacdive_data, record_template, verbose = FALSE)
 }
 \arguments{
-\item{bacdive_data}{list of lists}
+\item{bacdive_data}{list of a bacdive data}
 
 \item{record_template}{data.frame of instructions for each row of data}
 
-\item{debug}{logical print debug messages. Default to FALSE.}
+\item{verbose}{logical print messages. Default to FALSE.}
 }
 \value{
 list of data
 }
 \description{
-Use template CSV to create functions to apply on BacDive records
+Use template CSV to get keys or functions to process BacDive data
 }
 \examples{
 formatRecord(bacdive_data, template)

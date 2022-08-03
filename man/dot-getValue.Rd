@@ -4,14 +4,14 @@
 \alias{.getValue}
 \title{Get value if it exists}
 \usage{
-.getValue(value, ..., debug = FALSE)
+.getValue(value, ..., verbose = FALSE)
 }
 \arguments{
 \item{value}{A list of lists of data}
 
 \item{...}{A list}
 
-\item{debug}{logical Message if TRUE. Defaults to FALSE.}
+\item{verbose}{logical message if TRUE. Defaults to FALSE.}
 }
 \value{
 integer string character(0)

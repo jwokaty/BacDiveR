@@ -9,7 +9,7 @@
 }
 
 .cleanUp <- function(s) {
-    replaceQuotes(stripHtml(s))
+    .replaceQuotes(.stripHtml(s))
 }
 
 #' authenticate to BacDive
@@ -26,7 +26,7 @@
 #'
 #' @examples
 #' authenticate(
-.authenticate <- function(username, password) {
+authenticate <- function(username, password) {
     open_bacdive(username, password)
 }
 
@@ -59,26 +59,29 @@
 #'
 #' @param value A list of lists of data
 #' @param ... A list
-#' @param debug logical Message if TRUE. Defaults to FALSE.
+#' @param verbose logical message if TRUE. Defaults to FALSE.
 #'
 #' @return integer string character(0)
 #'
 #' @examples
 #' getValue(result, 'General', 'BacDive-ID')
-.getValue <- function(value, ..., debug = FALSE) {
-    keys <- list(...)
+.getValue <- function(value, ..., verbose = FALSE) {
+    keys <- list(...)[[1]]
     key <- ""
     for (key in keys) {
-        if (debug)
-            message(paste("[DEBUG]",  value, "[[", key, "]]"))
+        if (verbose)
+            message(paste("[.getValue]",  value, "[[", key, "]]"))
+
         if (key %in% names(value))
             value <- value[[key]]
+        else if (length(value) > 0 && key %in% names(value[[1]]))
+            value <- value[[1]][[key]]
     }
 
     if (is.null(value) || (is.list(value) && !(key %in% value))) {
         value <- ""
-        if (debug)
-            message(paste("[DEBUG]",  key, "not found in", value))
+        if (verbose)
+            message(paste("[.getValue]",  key, "not found in", value))
     }
     value
 }
@@ -111,7 +114,7 @@
 
 #' Convert a string separated by commas into a vector of strings
 #'
-#' Attempts to parse items separated by double quotes
+#' Attempts to parse items separated by special double quotes
 #'
 #' @param a_string character representing a comma-separated vector
 #'
@@ -120,7 +123,7 @@
 #' @importFrom stringr str_detect str_extract str_sub str_trim str_remove
 #'
 #' @examples
-#' toVector('“Isolation, sample, environment”, isolation')
+#' .toVector('“Isolation, sample, environment”, isolation')
 .toVector <- function(a_string) {
     a_vector <- c()
 
@@ -145,55 +148,108 @@
   a_vector
 }
 
-.getTaxonName <- function(bacdive_data) {
-  message("[DEBUG] - getTaxonName")
+.getTaxonName <- function(bacdive_data, verbose = FALSE) {
+  message("[.getTaxonName] - getTaxonName")
 }
 
-.getNcbi <- function(bacdive_data) {
-  message("[DEBUG] - getNcbi")
+.getAccession <- function(sequence_info, pattern, verbose = FALSE) {
+    for (s in sequence_info) {
+        if (str_match(s$accession, pattern) &&
+            (s$`assembly level` == "contig")) {
+            sequence_id <- s$accession
+            break
+        }
+    }
 }
 
-.getParent <- function(bacdive_data) {
-  message("[DEBUG] - getParent")
+.getSequenceId <- function(bacdive_data, sequence_type, verbose = FALSE) {
+    sequence_info <- bacdive_data$`Sequence information`$`Genome sequences`
+    sequence_id <- ""
+    key <- ""
+
+    if (is.null(sequence_info))
+        return("")
+
+    if (sequence_type == "genome")
+        sequence_id <- .getAccession(sequence_info, "^GCA_", verbose)
+    else if (sequence_type == "assembly")
+        sequence_id <- .getAccession(sequence_info, "^NC_", verbose)
+
+    sequence_id
 }
 
-.getRank <- function(bacdive_data) {
-  message("[DEBUG] - getRank")
+.getAccessionId <- function(bacdive_data, verbose = FALSE) {
+    .getSequenceId(bacdive_data, "accession", verbose)
 }
 
-.getScientificName <- function(bacdive_data) {
-  message("[DEBUG] - getScientificName")
+.getGenomeId <- function(bacdive_data, verbose = FALSE) {
+    .getSequenceId(bacdive_data, "genome", verbose)
 }
 
-#' Use template CSV to create functions to apply on BacDive records
+.getNcbi <- function(bacdive_data, verbose = FALSE) {
+
+}
+
+.getParent <- function(bacdive_data, verbose = FALSE) {
+  message("[.getNcbi] - getParent")
+}
+
+.getRank <- function(bacdive_data, verbose = FALSE) {
+  message("[.getRank] - getNcbi")
+}
+
+#' Get the Scientific Name
 #'
-#' @param bacdive_data list of lists
+#' Try the LPSN (https://lpsn.dsmz.de/) path first. Otherwise, choose first
+#' reference
+#'
+#' @param bacdive_data list of a bacdive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return a character vector
+.getScientificName <- function(bacdive_data, verbose = FALSE) {
+    keys <- c("Name and taxonomic classification", "LPSN", "full scientific name")
+    scientific_name <- .getValue(bacdive_data, keys, verbose)
+    if (scientific_name == "") {
+        keys <- c("Name and taxonomic classification", "full scientific name")
+        scientific_name <- .getValue(bacdive_data, keys, verbose)
+    }
+    scientific_name
+}
+
+#' Use template CSV to get keys or functions to process BacDive data
+#'
+#' @param bacdive_data list of a bacdive data
 #' @param record_template data.frame of instructions for each row of data
-#' @param debug logical print debug messages. Default to FALSE.
+#' @param verbose logical print messages. Default to FALSE.
 #'
 #' @return list of data
 #'
 #' @examples
 #' formatRecord(bacdive_data, template)
-.formatRecord <- function(bacdive_data, record_template, debug = FALSE) {
+.formatRecord <- function(bacdive_data, record_template, verbose = FALSE) {
     record = list()
     for (i in 1:nrow(record_template)) {
         template_row <- record_template[i, ]
         value <- ''
 
-        if (as.logical(template_row$is_function))
-            value <- do.call(template_row$keys, bacdive_data)
-        else
-            key_list <- .toVector(template_row$keys)
-            value <- .getValue(bacdive_data, key_list)
+        if (template_row$custom_function != "") {
+            value <- do.call(template_row$custom_function,
+                             list("bacdive_data" = bacdive_data,
+                                  "verbose" = verbose))
+        } else {
+            key_vector <- .toVector(template_row$keys)
+            value <- .getValue(bacdive_data, key_vector, verbose)
+        }
 
-        if (as.logical(template_row$needs_clean))
-            value <- cleanUp(value)
+        if (!is.na(as.logical(template_row$needs_clean)) &&
+            as.logical(template_row$needs_clean))
+            value <- .cleanUp(value)
 
-        bacdive_record[template_row$column] <- value
+        record[template_row$column] <- value
 
-        if (debug)
-            message(paste("[DEBUG]",  template_row$column, "=", value))
+        if (verbose)
+            message(paste("[.formatRecord]",  template_row$column, "=", value))
     }
-    bacdive_record
+    record
 }

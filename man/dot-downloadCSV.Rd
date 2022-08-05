@@ -6,16 +6,12 @@
 \usage{
 .downloadCSV(
   bacdive_url = "https://bacdive.dsmz.de/advsearch/csv",
-  bacdive_csv = "BacDiveIDs.csv",
   update = FALSE
 )
 }
 \arguments{
 \item{bacdive_url}{character(1) URL to BacDive CSV. Defaults to
 https://bacdive.dsmz.de/advsearch/csv.}
-
-\item{bacdive_csv}{character(1) CSV with all BacDive IDs. Defaults to
-writing BacDiveIDs.csv in the current working directory.}
 
 \item{update}{bool Downloads the file again if TRUE. Defaults to FALSE.}
 }
@@ -24,5 +20,5 @@ Download CSV with BacDive IDs
 }
 \examples{
 downloadCSV()
-downloadCSV("https://bacdive.dsmz.de/advsearch/csv", "BacDiveIDs.csv")
+downloadCSV("https://bacdive.dsmz.de/advsearch/csv")
 }

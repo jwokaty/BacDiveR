@@ -1,13 +1,13 @@
-column,keys,custom_function,needs_clean
+column,elements,custom_function,needs_clean
 bacdive_id,"General, BacDive-ID",,
 taxon_name,,.getTaxonName,
 rank,,.getRank,
 parent,,.getParent,
-parent_ncbi_id,,.getNcbi,
+parent_ncbi_id,,.getParentNcbiId,
 parent_rank,,.getRank,
 accession_id,"Sequence information, 16S sequences",.getSequenceId,
 genome_id,"Sequence information, Genome sequences",,
-ncbi_id,,.getNcbi,
+ncbi_id,,.getNcbiId,
 type_strain,"Name and taxonomic classification, type strain",,
 full_scientific_name,,.getScientificName,TRUE
 gram_stain,"Morphology, cell morphology, gram stain",,

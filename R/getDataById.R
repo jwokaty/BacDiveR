@@ -15,10 +15,10 @@
 #'
 #' @examples
 #' access_object <- authenticate('username', 'password')
-#' getDataById(access_object, 12345)
-getDataById <- function(access_object, id,
-                        template_path = "inst/extdata/template.csv",
-                        verbose = FALSE) {
+#' getDataByBacDiveId(access_object, 12345)
+getDataByBacDiveId <- function(access_object, id,
+                               template_path = "inst/extdata/template.csv",
+                               verbose = FALSE) {
 
     tryCatch({
         response <- fetch(access_object, id)

@@ -24,9 +24,16 @@
 #'
 #' @importFrom BacDive open_bacdive
 #'
+#' @export
+#'
 #' @examples
 #' authenticate(
 authenticate <- function(username, password) {
+    if (interactive())
+        message(paste("If you intend to fetch all records, set your",
+                      "username and password in environment variables",
+                      "with Sys.setenv() to allow BacDiveR to",
+                      "reauthenticate with BacDive."))
     open_bacdive(username, password)
 }
 
@@ -34,20 +41,20 @@ authenticate <- function(username, password) {
 #'
 #' @param bacdive_url character(1) URL to BacDive CSV. Defaults to
 #'        https://bacdive.dsmz.de/advsearch/csv.
-#' @param bacdive_csv character(1) CSV with all BacDive IDs. Defaults to
-#'        writing BacDiveIDs.csv in the current working directory.
 #' @param update bool Downloads the file again if TRUE. Defaults to FALSE.
+#'
+#' @importFrom BiocFileCache BiocFileCache bfcrpath bfcinfo
 #'
 #' @examples
 #' downloadCSV()
-#' downloadCSV("https://bacdive.dsmz.de/advsearch/csv", "BacDiveIDs.csv")
+#' downloadCSV("https://bacdive.dsmz.de/advsearch/csv")
 .downloadCSV <- function(bacdive_url = "https://bacdive.dsmz.de/advsearch/csv",
-                        bacdive_csv = "BacDiveIDs.csv",
-                        update = FALSE) {
-    if (update & file.exists(bacdive_csv))
-        file.remove(bacdive_csv)
-    if (!file.exists(bacdive_csv))
-        download.file(bacdive_url, destfile = bacdive_csv)
+                         update = FALSE) {
+    bfc <- BiocFileCache()
+    bacdive_csv_bfc_path <- bfcrpath(bfc, bacdive_url)
+    if (update)
+        bfcdownload(bfc, bfcinfo()$rid, ask = FALSE)
+    bacdive_csv_bfc_path
 }
 
 .getValidRanks <- function() {
@@ -66,8 +73,9 @@ authenticate <- function(username, password) {
 #' @examples
 #' getValue(result, 'General', 'BacDive-ID')
 .getValue <- function(value, ..., verbose = FALSE) {
-    keys <- list(...)[[1]]
+    keys <- unlist(list(...)) # TODO: Need better way to do this
     key <- ""
+
     for (key in keys) {
         if (verbose)
             message(paste("[.getValue]",  value, "[[", key, "]]"))
@@ -83,6 +91,7 @@ authenticate <- function(username, password) {
         if (verbose)
             message(paste("[.getValue]",  key, "not found in", value))
     }
+
     value
 }
 
@@ -148,46 +157,91 @@ authenticate <- function(username, password) {
   a_vector
 }
 
+#' Get Taxon Name from General Description
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @importFrom stringr str_split
+#'
+#' @examples
+#' .getTaxonName(bacdive_data, TRUE)
 .getTaxonName <- function(bacdive_data, verbose = FALSE) {
-  message("[.getTaxonName] - getTaxonName")
+    description <- stringr::str_split(bacdive_data$General$description,
+                                      " is ",
+                                      simplify = TRUE)
+    taxon_name <- description[1, 1]
+    .cleanUp(taxon_name)
 }
 
+#' Get the accession id
+#'
+#' @param sequence_info list of sequence data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @importFrom stringr str_match
+#'
+#' @examples
+#' .getAccession(sequence_info, TRUE)
 .getAccession <- function(sequence_info, pattern, verbose = FALSE) {
+    sequence_id <- ""
+
     for (s in sequence_info) {
         if (str_match(s$accession, pattern) &&
-            (s$`assembly level` == "contig")) {
+            grepl(.getTaxonName(bacdive_data, verbose), s$description)) {
             sequence_id <- s$accession
+            break
+        }
+    }
+
+    sequence_id
+}
+
+#' Get the genome or 16S sequence id
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @importFrom stringr str_match
+#'
+#' @examples
+#' .getAccession(bacdive_data, TRUE)
+.getSequenceId <- function(bacdive_data, sequence_type, verbose = FALSE) {
+    sequence_info <- bacdive_data$`Sequence information`
+    sequence_id <- ""
+
+    if (is.null(sequence_info))
+        return("")
+
+    if (sequence_type == "Genome sequences") {
+        sequence_info <- sequence_info$`Genome sequence`
+        sequence_id <- .getAccession(sequence_info, "^GCA_", verbose)
+    } else if (sequence_type == "16S sequences") {
+        sequence_info <- sequence_info$`16S sequence`
+        sequence_id <- .getAccession(sequence_info, "^NC_", verbose)
+    }
+
+    sequence_id
+}
+
+.getNcbiId <- function(bacdive_data, level = "strain", verbose = FALSE) {
+    ncbi_id <- ""
+    for (id in bacdive_data$General$`NCBI tax id`) {
+        if (level == "strain" || level %in% head(.getValidRanks(), -2)) {
+            ncbi_id <- id
             break
         }
     }
 }
 
-.getSequenceId <- function(bacdive_data, sequence_type, verbose = FALSE) {
-    sequence_info <- bacdive_data$`Sequence information`$`Genome sequences`
-    sequence_id <- ""
-    key <- ""
-
-    if (is.null(sequence_info))
-        return("")
-
-    if (sequence_type == "genome")
-        sequence_id <- .getAccession(sequence_info, "^GCA_", verbose)
-    else if (sequence_type == "assembly")
-        sequence_id <- .getAccession(sequence_info, "^NC_", verbose)
-
-    sequence_id
-}
-
-.getAccessionId <- function(bacdive_data, verbose = FALSE) {
-    .getSequenceId(bacdive_data, "accession", verbose)
-}
-
-.getGenomeId <- function(bacdive_data, verbose = FALSE) {
-    .getSequenceId(bacdive_data, "genome", verbose)
-}
-
-.getNcbi <- function(bacdive_data, verbose = FALSE) {
-
+.getParentNcbi <- function(bacdive_data, verbose = FALSE) {
+    .getNcbi(bacdive_data, "species", verbose)
 }
 
 .getParent <- function(bacdive_data, verbose = FALSE) {
@@ -210,10 +264,12 @@ authenticate <- function(username, password) {
 .getScientificName <- function(bacdive_data, verbose = FALSE) {
     keys <- c("Name and taxonomic classification", "LPSN", "full scientific name")
     scientific_name <- .getValue(bacdive_data, keys, verbose)
+
     if (scientific_name == "") {
         keys <- c("Name and taxonomic classification", "full scientific name")
         scientific_name <- .getValue(bacdive_data, keys, verbose)
     }
+
     scientific_name
 }
 
@@ -229,6 +285,7 @@ authenticate <- function(username, password) {
 #' formatRecord(bacdive_data, template)
 .formatRecord <- function(bacdive_data, record_template, verbose = FALSE) {
     record = list()
+
     for (i in 1:nrow(record_template)) {
         template_row <- record_template[i, ]
         value <- ''
@@ -251,5 +308,6 @@ authenticate <- function(username, password) {
         if (verbose)
             message(paste("[.formatRecord]",  template_row$column, "=", value))
     }
+
     record
 }

@@ -4,12 +4,14 @@
 \alias{authenticate}
 \title{authenticate to BacDive}
 \usage{
-authenticate(username, password)
+authenticate(username, password, verbose = TRUE)
 }
 \arguments{
 \item{username}{character(1) BacDive email}
 
 \item{password}{character(1) BacDive password}
+
+\item{verbose}{bool}
 }
 \value{
 A BacDive access object
@@ -19,5 +21,8 @@ Credentials should be stored in environment variables "BACDIVE_USERNAME" and
 "BACDIVE_PASSWORD".
 }
 \examples{
-authenticate(
+Sys.setenv("BACDIVE_USERNAME" = "my.user.name@my.school.edu",
+           "BACDIVE_PASSWORD" = "my password")
+ao <- authenticate(Sys.getenv("BACDIVE_USERNAME"),
+                   Sys.getenv("BACDIVE_PASSWORD"))
 }

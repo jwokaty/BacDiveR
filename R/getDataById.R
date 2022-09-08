@@ -9,7 +9,7 @@
 #'
 #' @return list of lists of BacDive Data
 #'
-#' @importFrom BacDive fetch
+#' @importFrom BacDive fetch records
 #'
 #' @export
 #'
@@ -21,7 +21,7 @@ getDataByBacDiveId <- function(access_object, id,
                                verbose = FALSE) {
 
     tryCatch({
-        response <- fetch(access_object, id)
+        response <-fetch(access_object, id)
 
         if (verbose)
             message(paste("[DEBUG] Fetched", response$count, "records"))
@@ -34,6 +34,6 @@ getDataByBacDiveId <- function(access_object, id,
     }, error = function(e) {
         message(paste("[ERROR]", e$message))
     }, warning = function(w) {
-      message(paste("[WARNING]", w$message))
+        message(paste("[WARNING]", w$message))
     })
 }

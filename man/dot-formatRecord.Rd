@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{.formatRecord}
 \alias{.formatRecord}
-\title{Use template CSV to get keys or functions to process BacDive data}
+\title{Use template CSV to get elements or functions to process BacDive data}
 \usage{
 .formatRecord(bacdive_data, record_template, verbose = FALSE)
 }
@@ -17,7 +17,7 @@
 list of data
 }
 \description{
-Use template CSV to get keys or functions to process BacDive data
+Use template CSV to get elements or functions to process BacDive data
 }
 \examples{
 formatRecord(bacdive_data, template)

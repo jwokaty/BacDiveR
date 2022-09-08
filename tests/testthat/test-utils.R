@@ -34,28 +34,28 @@ acetobacter_orientali <- list(
     )
 )
 
-test_that("getValue returns an empty string if key is a list.", {
-    expect_equal("", BacDiveR:::.getValue(acetobacter_orientali, "General"))
+test_that("getValues returns an empty string if key is a list.", {
+    expect_warning(BacDiveR:::.getValues(acetobacter_orientali, "General"))
 })
 
-test_that("getValue returns a value from a two keywords.", {
-    expect_equal(16, BacDiveR:::.getValue(acetobacter_orientali,
-                                          "General",
-                                          "BacDive-ID"))
+test_that("getValues returns a value from a two keywords.", {
+    expect_equal(16, BacDiveR:::.getValues(acetobacter_orientali,
+                                           "General",
+                                           "BacDive-ID"))
 })
 
-test_that("getValue returns an empty string given keys that don't exist.", {
-    expect_equal("", BacDiveR:::.getValue(acetobacter_orientali,
-                                          "General",
-                                          "Stuff"))
+test_that("getValues returns an empty string given keys that don't exist.", {
+    expect_equal("", BacDiveR:::.getValues(acetobacter_orientali,
+                                           "General",
+                                           "Stuff"))
 })
 
-test_that("getValue returns a value given a key with a comma.", {
+test_that("getValues returns a value given a key with a comma.", {
     expect_equal("Indonesia",
-                 BacDiveR:::.getValue(acetobacter_orientali,
-                                      "Isolation, sampling and environmental information",
-                                      "isolation",
-                                      "country"))
+                 BacDiveR:::.getValues(acetobacter_orientali,
+                                       "Isolation, sampling and environmental information",
+                                       "isolation",
+                                       "country"))
 })
 
 test_that(".toVector returns a single value when given no commas or quotes.", {

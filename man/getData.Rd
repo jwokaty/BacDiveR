@@ -6,7 +6,7 @@
 \usage{
 getData(
   access_object,
-  output_directory,
+  output_directory = getwd(),
   template_path = "inst/extdata/template.csv",
   update = FALSE,
   verbose = FALSE
@@ -15,7 +15,8 @@ getData(
 \arguments{
 \item{access_object}{BacDive Access Object BacDive access object}
 
-\item{output_directory}{character Path to the output csv.}
+\item{output_directory}{character Path to the output csv. Defaults to current
+directory.}
 
 \item{template_path}{character Path to the record template.
 Defaults to inst/extdata/template.csv.}

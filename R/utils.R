@@ -19,6 +19,7 @@
 #'
 #' @param username character(1) BacDive email
 #' @param password character(1) BacDive password
+#' @param verbose bool
 #'
 #' @return A BacDive access object
 #'
@@ -27,9 +28,12 @@
 #' @export
 #'
 #' @examples
-#' authenticate(
-authenticate <- function(username, password) {
-    if (interactive())
+#' Sys.setenv("BACDIVE_USERNAME" = "my.user.name@my.school.edu",
+#'            "BACDIVE_PASSWORD" = "my password")
+#' ao <- authenticate(Sys.getenv("BACDIVE_USERNAME"),
+#'                    Sys.getenv("BACDIVE_PASSWORD"))
+authenticate <- function(username, password, verbose = TRUE) {
+    if (interactive() && verbose)
         message(paste("If you intend to fetch all records, set your",
                       "username and password in environment variables",
                       "with Sys.setenv() to allow BacDiveR to",
@@ -62,37 +66,49 @@ authenticate <- function(username, password) {
       "species", "strain")
 }
 
-#' Get value if it exists
+#' Get values if any exist
 #'
 #' @param value A list of lists of data
 #' @param ... A list
+#' @param as_json logical if TRUE, return as JSON. Defaults to FALSE.
 #' @param verbose logical message if TRUE. Defaults to FALSE.
 #'
-#' @return integer string character(0)
+#' @return integer string character(0) list
 #'
 #' @examples
-#' getValue(result, 'General', 'BacDive-ID')
-.getValue <- function(value, ..., verbose = FALSE) {
-    keys <- unlist(list(...)) # TODO: Need better way to do this
-    key <- ""
+#' getValues(result, 'General', 'BacDive-ID')
+.getValues <- function(value, ..., as_json = FALSE, verbose = FALSE) {
+    elements <- unlist(list(...)) # TODO: Need better way to do this
 
-    for (key in keys) {
-        if (verbose)
-            message(paste("[.getValue]",  value, "[[", key, "]]"))
-
-        if (key %in% names(value))
-            value <- value[[key]]
-        else if (length(value) > 0 && key %in% names(value[[1]]))
-            value <- value[[1]][[key]]
-    }
-
-    if (is.null(value) || (is.list(value) && !(key %in% value))) {
-        value <- ""
-        if (verbose)
-            message(paste("[.getValue]",  key, "not found in", value))
+    for (element in elements) {
+        if (element %in% names(value))
+            value <- value[[element]]
+        else if (length(value) > 0 && element %in% names(value[[1]]))
+            value <- value[[1]][[element]]
+        else {
+            value <- ""
+            break
+        }
     }
 
     value
+}
+
+#' Get all data and transform into JSON
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param elements vector of strings of elements in BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @importFrom jsonlite toJSON
+#'
+#' @examples
+#' .getAll(bacdive_data, elements, TRUE)
+.getAll <- function(bacdive_data, elements, verbose = FALSE) {
+    values <- .getValues(bacdive_data, elements, as_json = TRUE, verbose = verbose)
+    values
 }
 
 #' Read BacDive CSV and return a list of BacDive IDs
@@ -157,6 +173,63 @@ authenticate <- function(username, password) {
   a_vector
 }
 
+.getSequenceDatabases <- function() {
+    c("ena", "patric", "ncbi", "img", "nuccore")
+}
+
+#' Get sequence id and append to string separated by semicolons
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param elements character representing the elements column of the template
+#' @param database character representing the sequence databases in
+#'                 .getSequenceDatabases().
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @examples
+#' .getSequenceId(bacdive_data,"Sequence information, 16S sequences", "ena")
+.getSequenceId <- function(bacdive_data, elements, database, verbose = FALSE) {
+    ids <- ""
+    sequences <- .getValues(bacdive_data, elements, verbose = verbose)
+
+    if (length(sequences) == 1 && sequences == "")
+        return(ids)
+
+    if (!is.atomic(sequences[[1]])) {
+        for (sequence in sequences) {
+            if (sequence$database == database) {
+                sep <- ifelse((ids == ""), "", ";")
+                ids <- paste(ids, as.character(sequence$accession), sep = sep)
+            }
+            else if (!(sequence$database %in% .getSequenceDatabases()))
+                message(paste(sequence$database, "not in databases!!!!!"))
+        }
+    } else if (sequences$database == database)
+        ids <- as.character(sequences$accession)
+    ids
+}
+
+.getSequenceEnaId <- function(bacdive_data, elements, verbose = FALSE) {
+    .getSequenceId(bacdive_data, elements, "ena", verbose = verbose)
+}
+
+.getSequenceNcbiId <- function(bacdive_data, elements, verbose = FALSE) {
+    .getSequenceId(bacdive_data, elements, "ncbi", verbose = verbose)
+}
+
+.getSequenceImgId <- function(bacdive_data, elements, verbose = FALSE) {
+    .getSequenceId(bacdive_data, elements, "img", verbose = verbose)
+}
+
+.getSequenceNuccoreId <- function(bacdive_data, elements, verbose = FALSE) {
+    .getSequenceId(bacdive_data, elements, "nuccore", verbose = verbose)
+}
+
+.getSequencePatricId <- function(bacdive_data, elements, verbose = FALSE) {
+    .getSequenceId(bacdive_data, elements, "patric", verbose = verbose)
+}
+
 #' Get Taxon Name from General Description
 #'
 #' @param bacdive_data list of a BacDive data
@@ -176,104 +249,82 @@ authenticate <- function(username, password) {
     .cleanUp(taxon_name)
 }
 
-#' Get the accession id
+#' Get NCBI ID
 #'
-#' @param sequence_info list of sequence data
-#' @param verbose logical print messages. Default to FALSE.
-#'
-#' @return vector of character
-#'
-#' @importFrom stringr str_match
-#'
-#' @examples
-#' .getAccession(sequence_info, TRUE)
-.getAccession <- function(sequence_info, pattern, verbose = FALSE) {
-    sequence_id <- ""
-
-    for (s in sequence_info) {
-        if (str_match(s$accession, pattern) &&
-            grepl(.getTaxonName(bacdive_data, verbose), s$description)) {
-            sequence_id <- s$accession
-            break
-        }
-    }
-
-    sequence_id
-}
-
-#' Get the genome or 16S sequence id
+#' If BacDive doesn't have NCBI ID in 'General', try searching by the taxon_name
+#' in taxizedb.
 #'
 #' @param bacdive_data list of a BacDive data
+#' @param level character representing the order. Defaults to 'strain'.
 #' @param verbose logical print messages. Default to FALSE.
 #'
 #' @return vector of character
 #'
-#' @importFrom stringr str_match
+#' @importFrom taxizedb name2taxid
 #'
 #' @examples
-#' .getAccession(bacdive_data, TRUE)
-.getSequenceId <- function(bacdive_data, sequence_type, verbose = FALSE) {
-    sequence_info <- bacdive_data$`Sequence information`
-    sequence_id <- ""
-
-    if (is.null(sequence_info))
-        return("")
-
-    if (sequence_type == "Genome sequences") {
-        sequence_info <- sequence_info$`Genome sequence`
-        sequence_id <- .getAccession(sequence_info, "^GCA_", verbose)
-    } else if (sequence_type == "16S sequences") {
-        sequence_info <- sequence_info$`16S sequence`
-        sequence_id <- .getAccession(sequence_info, "^NC_", verbose)
-    }
-
-    sequence_id
-}
-
+#' .getTaxonName(bacdive_data, TRUE)
 .getNcbiId <- function(bacdive_data, level = "strain", verbose = FALSE) {
     ncbi_id <- ""
-    for (id in bacdive_data$General$`NCBI tax id`) {
-        if (level == "strain" || level %in% head(.getValidRanks(), -2)) {
-            ncbi_id <- id
-            break
+
+    if (!is.null(bacdive_data$General$`NCBI tax id`)) {
+        for (ncbi_tax_id in bacdive_data$General$`NCBI tax id`) {
+            if (ncbi_tax_id$`Matching level` == level)
+                ncbi_id <- as.character(ncbi_tax_id$`NCBI tax id`)
         }
+
+    } else {
+        taxon_name <- .getTaxonName(bacdive_data, verbose = verbose)
+        ncbi_id <- taxizedb::name2taxid(taxon_name)
+        ncbi_id <- ifelse(is.na(ncbi_id), "", paste(ncbi_id, "via taxizedb"))
     }
+
+    ncbi_id
+
 }
 
-.getParentNcbi <- function(bacdive_data, verbose = FALSE) {
-    .getNcbi(bacdive_data, "species", verbose)
+.getParentNcbiId <- function(bacdive_data, verbose = FALSE) {
+    ncbi_id <- .getNcbiId(bacdive_data, "species", verbose = verbose)
+    if (ncbi_id == "") {
+        parent <- .getParent(bacdive_data, "Name and taxonomic classification",
+                             verbose)
+        parent_rank <- taxize::tax_rank(parent, db = "ncbi")
+        ncbi_id <- .getNcbiId(bacdive_data, parent_rank, verbose)
+    }
+    ncbi_id
+
 }
 
-.getParent <- function(bacdive_data, verbose = FALSE) {
-  message("[.getNcbi] - getParent")
-}
-
-.getRank <- function(bacdive_data, verbose = FALSE) {
-  message("[.getRank] - getNcbi")
-}
-
-#' Get the Scientific Name
+#' Get parent taxon name
 #'
-#' Try the LPSN (https://lpsn.dsmz.de/) path first. Otherwise, choose first
-#' reference
+#' If the species doesn't exist, check the next rank up in .getValidRank()
 #'
-#' @param bacdive_data list of a bacdive data
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param elements character representing the elements column of the template
+#' @param database character representing the sequence databases in
+#'                 .getSequenceDatabases().
 #' @param verbose logical print messages. Default to FALSE.
 #'
-#' @return a character vector
-.getScientificName <- function(bacdive_data, verbose = FALSE) {
-    keys <- c("Name and taxonomic classification", "LPSN", "full scientific name")
-    scientific_name <- .getValue(bacdive_data, keys, verbose)
-
-    if (scientific_name == "") {
-        keys <- c("Name and taxonomic classification", "full scientific name")
-        scientific_name <- .getValue(bacdive_data, keys, verbose)
+#' @return vector of character
+#'
+#' @examples
+#' .getParent(bacdive_data, "Name and taxonomic classification")
+.getParent <- function(bacdive_data, elements, verbose = FALSE) {
+    parent <- ""
+    for (rank in rev(.getValidRanks()[1:8])) {
+        parent <- .getValues(bacdive_data, c(elements, rank), verbose = verbose)
+        if (!is.na(parent))
+            break
     }
-
-    scientific_name
+    parent
 }
 
-#' Use template CSV to get keys or functions to process BacDive data
+.getRank <- function(bacdive_data, elements, verbose = FALSE) {
+    message("[.getRank] - getRank")
+}
+
+#' Use template CSV to get elements or functions to process BacDive data
 #'
 #' @param bacdive_data list of a bacdive data
 #' @param record_template data.frame of instructions for each row of data
@@ -284,30 +335,40 @@ authenticate <- function(username, password) {
 #' @examples
 #' formatRecord(bacdive_data, template)
 .formatRecord <- function(bacdive_data, record_template, verbose = FALSE) {
-    record = list()
+    formatted_record = list()
 
     for (i in 1:nrow(record_template)) {
         template_row <- record_template[i, ]
-        value <- ''
+        value <- ""
+        custom_function <- template_row$custom_function
 
-        if (template_row$custom_function != "") {
-            value <- do.call(template_row$custom_function,
+        if (template_row$elements != "")
+            elements <- .toVector(template_row$elements)
+
+        if (template_row$elements != "" && custom_function != "")  {
+            value <- do.call(custom_function,
+                             list("bacdive_data" = bacdive_data,
+                                  "elements" = elements,
+                                  "verbose" = verbose))
+        } else if (custom_function != "") {
+            value <- do.call(custom_function,
                              list("bacdive_data" = bacdive_data,
                                   "verbose" = verbose))
         } else {
-            key_vector <- .toVector(template_row$keys)
-            value <- .getValue(bacdive_data, key_vector, verbose)
+            value <- .getValues(bacdive_data, elements, as_json = FALSE,
+                                verbose = verbose)
         }
 
         if (!is.na(as.logical(template_row$needs_clean)) &&
             as.logical(template_row$needs_clean))
             value <- .cleanUp(value)
 
-        record[template_row$column] <- value
+        formatted_record[template_row$column] <- ifelse(is.null(value), "",
+                                                        as.character(value))
 
         if (verbose)
             message(paste("[.formatRecord]",  template_row$column, "=", value))
     }
 
-    record
+    formatted_record
 }

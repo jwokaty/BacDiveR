@@ -12,6 +12,19 @@
     .replaceQuotes(.stripHtml(s))
 }
 
+.getValidRanks <- function() {
+    c("superkingdom", "kingdom", "phylum", "class", "order", "family", "genus",
+      "species", "strain")
+}
+
+.getSequenceDatabases <- function() {
+    c("ena", "patric", "ncbi", "img", "nuccore")
+}
+
+.getRank <- function(bacdive_data,verbose = FALSE) {
+    "strain"
+}
+
 #' authenticate to BacDive
 #'
 #' Credentials should be stored in environment variables "BACDIVE_USERNAME" and
@@ -45,25 +58,22 @@ authenticate <- function(username, password, verbose = TRUE) {
 #'
 #' @param bacdive_url character(1) URL to BacDive CSV. Defaults to
 #'        https://bacdive.dsmz.de/advsearch/csv.
-#' @param update bool Downloads the file again if TRUE. Defaults to FALSE.
+#' @param update_cache bool Downloads the file again if TRUE. Defaults to FALSE.
 #'
-#' @importFrom BiocFileCache BiocFileCache bfcrpath bfcinfo
+#' @importFrom BiocFileCache BiocFileCache bfcadd bfcdownload
 #'
 #' @examples
 #' downloadCSV()
 #' downloadCSV("https://bacdive.dsmz.de/advsearch/csv")
 .downloadCSV <- function(bacdive_url = "https://bacdive.dsmz.de/advsearch/csv",
-                         update = FALSE) {
-    bfc <- BiocFileCache()
-    bacdive_csv_bfc_path <- bfcrpath(bfc, bacdive_url)
-    if (update)
-        bfcdownload(bfc, bfcinfo()$rid, ask = FALSE)
-    bacdive_csv_bfc_path
-}
-
-.getValidRanks <- function() {
-    c("superkingdom", "kingdom", "phylum", "class", "order", "family", "genus",
-      "species", "strain")
+                         update_cache = FALSE) {
+    path <- tempfile()
+    bfc <- BiocFileCache(path, ask = FALSE)
+    bacdive_csv_cache <- bfcadd(bfc, "BacDive", fpath = bacdive_url)
+    rid <- names(bacdive_csv_cache)
+    if (update_cache)
+        BiocFileCache::bfcdownload(bfc, rid, ask = FALSE)
+    bacdive_csv_cache
 }
 
 #' Get values if any exist
@@ -109,6 +119,154 @@ authenticate <- function(username, password, verbose = TRUE) {
 .getAll <- function(bacdive_data, elements, verbose = FALSE) {
     values <- .getValues(bacdive_data, elements, as_json = TRUE, verbose = verbose)
     values
+}
+
+#' Get halophily data
+#'
+#' Data will be in the format: salt growth tested_relation salt_concentration
+#' Data will be separated by semicolons.
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param elements vector of strings of elements in BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @examples
+#' .getHalophily(bacdive_data, elements, TRUE)
+.getHalophily <- function(bacdive_data, elements, verbose = FALSE) {
+    halophily <- ""
+    halophily_entries <- .getValues(bacdive_data, elements, verbose = verbose)
+    if (class(halophily_entries) == "list") {
+        if (class(halophily_entries[[1]]) == "list") {
+            for (halophily_entry in halophily_entries) {
+                sep <- ifelse((halophily == ""), "", ";")
+                entry <- paste(halophily_entry$salt, halophily_entry$growth,
+                               halophily_entry$`tested relation`,
+                               halophily_entry$concentration)
+                halophily <- paste(halophily, entry, sep = sep)
+            }
+        } else {
+            halophily <- paste(halophily_entries$salt, halophily_entries$growth,
+                               halophily_entries$`tested relation`,
+                               halophily_entries$concentration)
+        }
+    }
+    halophily
+}
+
+#' Get hemolysis data
+#'
+#' Data will be in the format: metabolite production
+#' Data will be separated by semicolons.
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param elements vector of strings of elements in BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @examples
+#' .getHemolysis(bacdive_data, elements)
+.getHemolysis <- function(bacdive_data, elements, verbose = FALSE) {
+    hemolysis <- ""
+    hemolysis_entries <- .getValues(bacdive_data, elements, verbose = verbose)
+    if (class(hemolysis_entries) == "list") {
+        if (class(hemolysis_entries[[1]]) == "list") {
+            for (hemolysis_entry in hemolysis_entries) {
+               sep <- ifelse((hemolysis == ""), "", ";")
+               hemolysis <- paste(hemolysis, hemolysis_entry$`type of hemolysis`,
+                                  sep = sep)
+            }
+        } else
+            hemolysis <- hemolysis_entries$`type of hemolysis`
+    }
+    hemolysis
+}
+
+#' Get metabolite production data
+#'
+#' Data will be in the format: metabolite production
+#' Data will be separated by semicolons.
+#'
+#' @param metabolite_entries list of metabolites entries
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @examples
+#' .getMetabolitesProduction(metabolites_entries, TRUE)
+.getMetabolitesProduction <- function(metabolites_entries, verbose = verbose) {
+    metabolites <- ""
+    if (class(metabolites_entries[[1]]) == "list") {
+        for (metabolite_entry in metabolites_entries) {
+            sep <- ifelse((metabolites == ""), "", ";")
+            production <- paste(metabolite_entry$metabolite,
+                                metabolite_entry$production)
+            metabolites <- paste(metabolites, production, sep = sep)
+        }
+    } else {
+        metabolites <- paste(metabolites_entries$metabolite,
+                             metabolites_entries$production)
+    }
+    metabolites
+}
+
+#' Get metabolite utilization data
+#'
+#' Data will be in the format: metabolite utilization_activity
+#' kind_of_utilization_tested
+#'
+#' @param metabolite_entries list of metabolites entries
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @examples
+#' .getMetabolitesUtilization(metabolites_entries, TRUE)
+.getMetabolitesUtilization <- function(metabolites_entries, verbose = verbose) {
+    metabolites <- ""
+    if (class(metabolites_entries[[1]]) == "list") {
+        for (metabolite_entry in metabolites_entries) {
+            sep <- ifelse((metabolites == ""), "", ";")
+            utilization <- paste(metabolite_entry$metabolite,
+                                 metabolite_entry$`utilization activity`,
+                                 metabolite_entry$`kind of utilization tested`)
+            metabolites <- paste(metabolites, utilization, sep = sep)
+        }
+    } else {
+        metabolites <- paste(metabolites_entries$metabolite,
+                             metabolites_entries$`utilization activity`,
+                             metabolites_entries$`kind of utilization tested`)
+    }
+    metabolites
+}
+
+#' Get metabolite data, which are in lists of lists
+#'
+#' Separate multiple values by a semicolon
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param elements vector of strings of elements in BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @examples
+#' .getMetabolites(bacdive_data, elements, TRUE)
+.getMetabolites <- function(bacdive_data, elements, verbose = FALSE) {
+    metabolites <- ""
+    metabolites_entries <- .getValues(bacdive_data, elements, verbose = verbose)
+    if (class(metabolites_entries) == "list") {
+        if ("utilization activity" %in% names(metabolites_entries[[1]])) {
+            metabolites <- .getMetabolitesUtilization(metabolites_entries,
+                                                     verbose)
+        } else if ("production" %in% names(metabolites_entries[[1]])) {
+            metabolites <- .getMetabolitesProduction(metabolites_entries,
+                                                     verbose)
+        }
+    }
+    metabolites
 }
 
 #' Read BacDive CSV and return a list of BacDive IDs
@@ -173,10 +331,6 @@ authenticate <- function(username, password, verbose = TRUE) {
   a_vector
 }
 
-.getSequenceDatabases <- function() {
-    c("ena", "patric", "ncbi", "img", "nuccore")
-}
-
 #' Get sequence id and append to string separated by semicolons
 #'
 #' @param bacdive_data list of a BacDive data
@@ -203,7 +357,7 @@ authenticate <- function(username, password, verbose = TRUE) {
                 ids <- paste(ids, as.character(sequence$accession), sep = sep)
             }
             else if (!(sequence$database %in% .getSequenceDatabases()))
-                message(paste(sequence$database, "not in databases!!!!!"))
+                message(paste(sequence$database, "should be added to databases"))
         }
     } else if (sequences$database == database)
         ids <- as.character(sequences$accession)
@@ -267,43 +421,52 @@ authenticate <- function(username, password, verbose = TRUE) {
 .getNcbiId <- function(bacdive_data, level = "strain", verbose = FALSE) {
     ncbi_id <- ""
 
-    if (!is.null(bacdive_data$General$`NCBI tax id`)) {
-        for (ncbi_tax_id in bacdive_data$General$`NCBI tax id`) {
-            if (ncbi_tax_id$`Matching level` == level)
-                ncbi_id <- as.character(ncbi_tax_id$`NCBI tax id`)
-        }
+    if ("NCBI tax id" %in% names(bacdive_data$General)) {
+        ncbi_tax_id_list <- bacdive_data$General$`NCBI tax id`
+        if (class(ncbi_tax_id_list[[1]]) == "list") {
+            for (ncbi_tax_id in ncbi_tax_id_list) {
+                if (ncbi_tax_id$`Matching level` == level) {
+                    ncbi_id <- as.character(ncbi_tax_id$`NCBI tax id`)
+                    break
+                }
+            }
+        } else if (ncbi_tax_id_list$`Matching level` == level)
+            ncbi_id <- as.character(ncbi_tax_id_list$`NCBI tax id`)
+    }
 
-    } else {
+    if (ncbi_id == "") {
         taxon_name <- .getTaxonName(bacdive_data, verbose = verbose)
         ncbi_id <- taxizedb::name2taxid(taxon_name)
-        ncbi_id <- ifelse(is.na(ncbi_id), "", paste(ncbi_id, "via taxizedb"))
+        ncbi_id <- ifelse(is.na(ncbi_id), "", ncbi_id)
     }
 
     ncbi_id
 
 }
 
-.getParentNcbiId <- function(bacdive_data, verbose = FALSE) {
-    ncbi_id <- .getNcbiId(bacdive_data, "species", verbose = verbose)
-    if (ncbi_id == "") {
-        parent <- .getParent(bacdive_data, "Name and taxonomic classification",
-                             verbose)
-        parent_rank <- taxize::tax_rank(parent, db = "ncbi")
-        ncbi_id <- .getNcbiId(bacdive_data, parent_rank, verbose)
-    }
-    ncbi_id
-
+#' Use LPSN if available for classification
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param elements vector of strings of elements in BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return list
+#'
+#' @examples
+#' .getClassification(bacdive_data, elements, TRUE)
+.getClassification <- function(bacdive_data, elements, verbose = FALSE) {
+    classification <- .getValues(bacdive_data, elements, verbose = verbose)
+    if ("LPSN" %in% names(classification))
+        classification <- classification$LPSN
+    classification
 }
 
 #' Get parent taxon name
 #'
 #' If the species doesn't exist, check the next rank up in .getValidRank()
 #'
-#'
 #' @param bacdive_data list of a BacDive data
 #' @param elements character representing the elements column of the template
-#' @param database character representing the sequence databases in
-#'                 .getSequenceDatabases().
 #' @param verbose logical print messages. Default to FALSE.
 #'
 #' @return vector of character
@@ -312,16 +475,66 @@ authenticate <- function(username, password, verbose = TRUE) {
 #' .getParent(bacdive_data, "Name and taxonomic classification")
 .getParent <- function(bacdive_data, elements, verbose = FALSE) {
     parent <- ""
+    classification <- .getClassification(bacdive_data, elements, verbose = verbose)
     for (rank in rev(.getValidRanks()[1:8])) {
-        parent <- .getValues(bacdive_data, c(elements, rank), verbose = verbose)
+        parent <- classification[[rank]]
         if (!is.na(parent))
             break
     }
     parent
 }
 
-.getRank <- function(bacdive_data, elements, verbose = FALSE) {
-    message("[.getRank] - getRank")
+#' Get parent rank
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @examples
+#' .getParentRank(bacdive_data, , "Name and taxonomic classification")
+.getParentRank <- function(bacdive_data, elements, verbose = FALSE) {
+    parent_rank <- ""
+    parent <- .getParent(bacdive_data, elements, verbose = verbose)
+    if (parent != "") {
+        classification <- .getClassification(bacdive_data,
+                                             "Name and taxonomic classification",
+                                             verbose = verbose)
+        for (rank in rev(.getValidRanks()[1:8])) {
+            if (classification[[rank]] == parent) {
+                parent_rank <- rank
+                break
+            }
+        }
+    }
+    parent_rank
+}
+
+#' Get parent NCBI id
+#'
+#' @param bacdive_data list of a BacDive data
+#' @param verbose logical print messages. Default to FALSE.
+#'
+#' @return vector of character
+#'
+#' @importFrom taxizedb name2taxid
+#'
+#' @examples
+#' .getParent(bacdive_data, "Name and taxonomic classification")
+.getParentNcbiId <- function(bacdive_data, elements, verbose = FALSE) {
+    parent_ncbi_id <- ""
+    parent_taxon_name <- .getParent(bacdive_data, elements, verbose)
+
+    tryCatch({
+        parent_ncbi_id <- name2taxid(parent_taxon_name)
+    }, error = function(e) {
+        parent_rank <- .getParentRank(bacdive_data, elements, verbose)
+        parent_ncbi_id <- .getNcbiId(bacdive_data, level = parent_rank, verbose)
+    })
+
+    if (is.na(parent_ncbi_id))
+        parent_ncbi_id <- ""
+    parent_ncbi_id
 }
 
 #' Use template CSV to get elements or functions to process BacDive data

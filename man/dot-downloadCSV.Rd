@@ -6,14 +6,14 @@
 \usage{
 .downloadCSV(
   bacdive_url = "https://bacdive.dsmz.de/advsearch/csv",
-  update = FALSE
+  update_cache = FALSE
 )
 }
 \arguments{
 \item{bacdive_url}{character(1) URL to BacDive CSV. Defaults to
 https://bacdive.dsmz.de/advsearch/csv.}
 
-\item{update}{bool Downloads the file again if TRUE. Defaults to FALSE.}
+\item{update_cache}{bool Downloads the file again if TRUE. Defaults to FALSE.}
 }
 \description{
 Download CSV with BacDive IDs

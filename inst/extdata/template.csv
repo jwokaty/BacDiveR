@@ -17,7 +17,6 @@ colony_color,"Morphology, colony morphology, colony color",,
 incubation_period,"Morphology, colony morphology, incubation period",,
 cultivation_medium_used,"Culture and growth conditions, culture medium, name,",,
 culture_temperature_growth,"Culture and growth conditions, culture temp, growth",,TRUE
-culture_temperature_type,"Culture and growth conditions, culture temp, type",,TRUE
 culture_temperature,"Culture and growth conditions, culture temp, temperature",,
 culture_temperature_range,"Culture and growth conditions, culture temp, range",,
 oxygen_tolerance,"Physiology and metabolism, oxygen tolerance, oxygen tolerance",,

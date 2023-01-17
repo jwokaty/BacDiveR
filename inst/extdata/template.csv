@@ -25,7 +25,7 @@ halophily,"Physiology and metabolism, halophily",.getHalophily,
 metabolite_utiilization,"Physiology and metabolism, metabolite utilization",.getMetabolites,
 metabolite_production,"Physiology and metabolism, metabolite production",.getMetabolites,
 sample_type,"“Isolation, sampling and environmental information”, isolation, sample type",,TRUE
-geographic_location,"“Isolation, sampling and environmental information”, isolation, geographic location",,
+geographic_location,"“Isolation, sampling and environmental information”, isolation, geographic location",,TRUE
 country,"“Isolation, sampling and environmental information”, isolation, country",,
 biosafety_level,"Safety information, risk assessment, biosafety level",,
 biosafety_level_comment,"Safety information, risk assessment, biosafety level comment",,

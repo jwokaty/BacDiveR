@@ -31,7 +31,9 @@ getData <- function(access_object,
     output_path <- paste0(output_directory, "/bacdive_",
                           format(Sys.time(), "%Y%m%d_%H%M"),".csv")
 
-    bacdive_data <- read.csv(file.path(getwd(), "bacdive_ids.csv"), skip = 2)
+    bacdive_ids_csv <- .downloadCSV(update_cache = update)
+
+    bacdive_data <- read.csv(bacdive_ids_csv, skip = 2)
     number_of_ids <- length(bacdive_data$ID)
     retrieved_ids <- c()
     unretrieved_ids <- c()

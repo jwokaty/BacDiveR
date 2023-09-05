@@ -30,9 +30,9 @@ variables
 Create an access object
 
     # Setting verbose to FALSE to avoid reminder message
-    ao <- BacDiveR::authentication(Sys.getenv["BACDIVE_USERNAME"],
-                                   Sys.getenv["BACDIVE_PASSWORD"],
-                                   verbose = FALSE)
+    ao <- BacDiveR::authenticate(Sys.getenv["BACDIVE_USERNAME"],
+                                 Sys.getenv["BACDIVE_PASSWORD"],
+                                 verbose = FALSE)
 
 Look up by BacDive ID
 

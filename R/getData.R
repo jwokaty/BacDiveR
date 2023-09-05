@@ -32,7 +32,6 @@ getData <- function(access_object,
                           format(Sys.time(), "%Y%m%d_%H%M"),".csv")
 
     bacdive_ids_csv <- .downloadCSV(update_cache = update)
-
     bacdive_data <- read.csv(bacdive_ids_csv, skip = 2)
     number_of_ids <- length(bacdive_data$ID)
     retrieved_ids <- c()

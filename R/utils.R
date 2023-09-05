@@ -67,13 +67,21 @@ authenticate <- function(username, password, verbose = TRUE) {
 #' downloadCSV("https://bacdive.dsmz.de/advsearch/csv")
 .downloadCSV <- function(bacdive_url = "https://bacdive.dsmz.de/advsearch/csv",
                          update_cache = FALSE) {
+    rname <- "BacDive"
     path <- tempfile()
-    bfc <- BiocFileCache(path, ask = FALSE)
-    bacdive_csv_cache <- bfcadd(bfc, "BacDive", fpath = bacdive_url)
-    rid <- names(bacdive_csv_cache)
-    if (update_cache)
-        BiocFileCache::bfcdownload(bfc, rid, ask = FALSE)
-    bacdive_csv_cache
+    bfc <- BiocFileCache::BiocFileCache(path, ask = FALSE)
+    info <- BiocFileCache::bfcinfo(bfc)
+    if (nrow(info) == 0) {
+        BiocFileCache::bfcadd(bfc, rname = rname, fpath = bacdive_url)
+    }
+
+    results <- BiocFileCache::bfcquery(bfc, "BacDive")
+
+    # TODO: Resource should expire every 6 months
+    if (update_cache) {
+        BiocFileCache::bfcdownload(bfc, results$rid, ask = FALSE)
+    }
+    results$rpath
 }
 
 #' Get values if any exist

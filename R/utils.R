@@ -342,7 +342,7 @@ authenticate <- function(username, password, verbose = TRUE) {
 #' @return vector of character
 #'
 #' @examples
-#' .getSequenceId(bacdive_data,"Sequence information, 16S sequences", "ena")
+#' .getSequenceId(bacdive_data, "Sequence information, 16S sequences", "ena")
 .getSequenceId <- function(bacdive_data, elements, database, verbose = FALSE) {
     ids <- ""
     sequences <- .getValues(bacdive_data, elements, verbose = verbose)

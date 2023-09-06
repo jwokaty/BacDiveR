@@ -32,7 +32,6 @@
 #'
 #' @param username character(1) BacDive email
 #' @param password character(1) BacDive password
-#' @param verbose bool
 #'
 #' @return A BacDive access object
 #'
@@ -45,12 +44,7 @@
 #'            "BACDIVE_PASSWORD" = "my password")
 #' ao <- authenticate(Sys.getenv("BACDIVE_USERNAME"),
 #'                    Sys.getenv("BACDIVE_PASSWORD"))
-authenticate <- function(username, password, verbose = TRUE) {
-    if (interactive() && verbose)
-        message(paste("If you intend to fetch all records, set your",
-                      "username and password in environment variables",
-                      "with Sys.setenv() to allow BacDiveR to",
-                      "reauthenticate with BacDive."))
+authenticate <- function(username, password) {
     open_bacdive(username, password)
 }
 
@@ -350,7 +344,7 @@ authenticate <- function(username, password, verbose = TRUE) {
 #' @return vector of character
 #'
 #' @examples
-#' .getSequenceId(bacdive_data, "Sequence information, 16S sequences", "ena")
+#' .getSequenceId(bacdive_data, "Sequence information, 16S sequences", "nuccore")
 .getSequenceId <- function(bacdive_data, elements, database, verbose = FALSE) {
     ids <- ""
     sequences <- .getValues(bacdive_data, elements, verbose = verbose)
@@ -360,36 +354,22 @@ authenticate <- function(username, password, verbose = TRUE) {
 
     if (!is.atomic(sequences[[1]])) {
         for (sequence in sequences) {
-            if (sequence$database == database) {
+            if (("database" %in% names(sequence)) && sequence$database == database) {
                 sep <- ifelse((ids == ""), "", ";")
                 ids <- paste(ids, as.character(sequence$accession), sep = sep)
             }
-            else if (!(sequence$database %in% .getSequenceDatabases()))
-                message(paste(sequence$database, "should be added to databases"))
         }
-    } else if (sequences$database == database)
+    } else if (("database" %in% names(sequence)) && sequences$database == database)
         ids <- as.character(sequences$accession)
     ids
-}
-
-.getSequenceEnaId <- function(bacdive_data, elements, verbose = FALSE) {
-    .getSequenceId(bacdive_data, elements, "ena", verbose = verbose)
-}
-
-.getSequenceNcbiId <- function(bacdive_data, elements, verbose = FALSE) {
-    .getSequenceId(bacdive_data, elements, "ncbi", verbose = verbose)
-}
-
-.getSequenceImgId <- function(bacdive_data, elements, verbose = FALSE) {
-    .getSequenceId(bacdive_data, elements, "img", verbose = verbose)
 }
 
 .getSequenceNuccoreId <- function(bacdive_data, elements, verbose = FALSE) {
     .getSequenceId(bacdive_data, elements, "nuccore", verbose = verbose)
 }
 
-.getSequencePatricId <- function(bacdive_data, elements, verbose = FALSE) {
-    .getSequenceId(bacdive_data, elements, "patric", verbose = verbose)
+.getSequenceNcbiId <- function(bacdive_data, elements, verbose = FALSE) {
+    .getSequenceId(bacdive_data, elements, "ncbi", verbose = verbose)
 }
 
 #' Get Taxon Name from General Description
@@ -444,7 +424,12 @@ authenticate <- function(username, password, verbose = TRUE) {
 
     if (ncbi_id == "") {
         taxon_name <- .getTaxonName(bacdive_data, verbose = verbose)
-        ncbi_id <- taxizedb::name2taxid(taxon_name)
+        ncbi_id <- tryCatch({
+            taxizedb::name2taxid(taxon_name)
+        }, error = function(e) {
+            results <- taxizedb::name2taxid(taxon_name, out_type = "summary")
+            results$id[1]
+        })
         ncbi_id <- ifelse(is.na(ncbi_id), "", ncbi_id)
     }
 
@@ -533,11 +518,11 @@ authenticate <- function(username, password, verbose = TRUE) {
     parent_ncbi_id <- ""
     parent_taxon_name <- .getParent(bacdive_data, elements, verbose)
 
-    tryCatch({
-        parent_ncbi_id <- name2taxid(parent_taxon_name)
+    parent_ncbi_id <- tryCatch({
+        name2taxid(parent_taxon_name)
     }, error = function(e) {
         parent_rank <- .getParentRank(bacdive_data, elements, verbose)
-        parent_ncbi_id <- .getNcbiId(bacdive_data, level = parent_rank, verbose)
+        .getNcbiId(bacdive_data, level = parent_rank, verbose)
     })
 
     if (is.na(parent_ncbi_id))

@@ -50,8 +50,7 @@ getData <- function(access_object,
         if (!summary(access_object)["expired"] &&
             !summary(access_object)["refresh_expired"]) {
             access_object <- authenticate(Sys.getenv("BACDIVE_USERNAME"),
-                                          Sys.getenv("BACDIVE_PASSWORD"),
-                                          verbose)
+                                          Sys.getenv("BACDIVE_PASSWORD"))
         } else {
             stop("Invalid credentials")
         }

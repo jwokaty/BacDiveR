@@ -99,8 +99,8 @@ getData <- function(access_object,
         append_column_names <- length(retrieved_ids) <= (increment + 1)
 
         tryCatch(
-            write.table(formatted_records, output_path, row.names = FALSE,
-                        col.names = append_column_names,
+            write.table(formatted_records, output_path, sep = ",",
+                        row.names = FALSE, col.names = append_column_names,
                         append = !append_column_names),
             warning = function(w) {
                 message(w)

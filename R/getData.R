@@ -1,6 +1,8 @@
 #' Get BacDive Data
 #'
 #' @param access_object BacDive Access Object BacDive access object
+#' @param max_ids_to_retrieve Number of ids to retrieve. If no number specified,
+#'        it will assume the number of ids in the download.
 #' @param template_path character Path to the record template.
 #'        Defaults to inst/extdata/template.csv.
 #' @param output_directory character Path to the output csv. Defaults to current
@@ -19,6 +21,7 @@
 #' access_object <- authenticate('username', 'password')
 #' getData(access_object)
 getData <- function(access_object,
+                    max_ids_to_retrieve = NULL,
                     output_directory = getwd(),
                     template_path = "inst/extdata/template.csv",
                     update = FALSE,
@@ -33,12 +36,17 @@ getData <- function(access_object,
 
     bacdive_ids_csv <- .downloadCSV(update_cache = update)
     bacdive_data <- read.csv(bacdive_ids_csv, skip = 2)
-    number_of_ids <- length(bacdive_data$ID)
     retrieved_ids <- c()
     unretrieved_ids <- c()
     start_index <- 1
     increment <- 99
     wait_time <- 60
+
+    if (is.null(max_ids_to_retrieve))
+        number_of_ids <- length(bacdive_data$ID)
+    else
+        number_of_ids <- max_ids_to_retrieve
+
 
     while((length(retrieved_ids) + length(unretrieved_ids)) < number_of_ids) {
         formatted_records <- data.frame()
@@ -84,8 +92,9 @@ getData <- function(access_object,
             retrieved_ids <- append(retrieved_ids, bacdive_id)
         }
 
-        unretrieved_ids <- append(unretrieved_ids,
-                                  ids[!(ids %in% retrieved_ids)])
+        ids_not_in_retrieved_ids <- ids[!(ids %in% retrieved_ids)]
+        if (length(ids_not_in_retrieved_ids))
+            unretrieved_ids <- append(unretrieved_ids, ids_not_in_retrieved_ids)
         start_index <- end_index + 1
         append_column_names <- length(retrieved_ids) <= (increment + 1)
 
@@ -99,10 +108,13 @@ getData <- function(access_object,
         )
     }
 
-    if (verbose)
+    if (verbose) {
         message(paste(number_of_ids, "expected.\n", length(retrieved_ids),
-                      "fetched.\n", length(unretrieved_ids),
-                      "unable to be fetched.\nUnable to fetch BacDive IDs:",
-                      unretrieved_ids, "\n", Sys.Date(), Sys.time()))
-
+                      "fetched.\n"))
+        if (length(unretrieved_ids) > 0) {
+            message(paste(length(unretrieved_ids), "unable to be fetched.\n"))
+            message(paste("Unable to fetch BacDive IDs:", unretrieved_ids, ".\n"))
+        }
+        message(paste("Finished", Sys.Date(), Sys.time()))
+    }
 }

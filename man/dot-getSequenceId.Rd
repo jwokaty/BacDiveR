@@ -23,5 +23,5 @@ vector of character
 Get sequence id and append to string separated by semicolons
 }
 \examples{
-.getSequenceId(bacdive_data, "Sequence information, 16S sequences", "ena")
+.getSequenceId(bacdive_data, "Sequence information, 16S sequences", "nuccore")
 }

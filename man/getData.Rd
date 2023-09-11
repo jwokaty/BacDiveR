@@ -6,6 +6,7 @@
 \usage{
 getData(
   access_object,
+  max_ids_to_retrieve = NULL,
   output_directory = getwd(),
   template_path = "inst/extdata/template.csv",
   update = FALSE,
@@ -14,6 +15,9 @@ getData(
 }
 \arguments{
 \item{access_object}{BacDive Access Object BacDive access object}
+
+\item{max_ids_to_retrieve}{Number of ids to retrieve. If no number specified,
+it will assume the number of ids in the download.}
 
 \item{output_directory}{character Path to the output csv. Defaults to current
 directory.}

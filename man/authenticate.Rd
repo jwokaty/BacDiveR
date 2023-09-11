@@ -4,14 +4,12 @@
 \alias{authenticate}
 \title{authenticate to BacDive}
 \usage{
-authenticate(username, password, verbose = TRUE)
+authenticate(username, password)
 }
 \arguments{
 \item{username}{character(1) BacDive email}
 
 \item{password}{character(1) BacDive password}
-
-\item{verbose}{bool}
 }
 \value{
 A BacDive access object

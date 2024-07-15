@@ -30,13 +30,13 @@ variables
 Create an access object
 
     # Setting verbose to FALSE to avoid reminder message
-    ao <- BacDiveR::authenticate(Sys.getenv["BACDIVE_USERNAME"],
-                                 Sys.getenv["BACDIVE_PASSWORD"],
+    ao <- BacDiveR::authenticate(Sys.getenv("BACDIVE_USERNAME"),
+                                 Sys.getenv("BACDIVE_PASSWORD"),
                                  verbose = FALSE)
 
 Look up by BacDive ID
 
-    entry <- BacDiveR::getDataByBacDiveID(access_object, id = 132485)
+    entry <- BacDiveR::getDataByBacDiveId(ao, id = 132485)
     # Default template returns a list with the following data
     > names(entry)
      [1] "bacdive_id"                 "taxon_name"                

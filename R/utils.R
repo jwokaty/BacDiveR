@@ -172,13 +172,19 @@ authenticate <- function(username, password) {
 #' .getHemolysis(bacdive_data, elements)
 .getHemolysis <- function(bacdive_data, elements, verbose = FALSE) {
     hemolysis <- ""
+    sep <- ""
     hemolysis_entries <- .getValues(bacdive_data, elements, verbose = verbose)
     if (class(hemolysis_entries) == "list") {
         if (class(hemolysis_entries[[1]]) == "list") {
             for (hemolysis_entry in hemolysis_entries) {
-               sep <- ifelse((hemolysis == ""), "", ";")
-               hemolysis <- paste(hemolysis, hemolysis_entry$`type of hemolysis`,
-                                  sep = sep)
+               if ("type of hemolysis" %in% names(hemolysis_entry)) {
+                 if (hemolysis != "") {
+                   sep <- ";"
+                 }
+                 hemolysis <- paste(hemolysis,
+                                    hemolysis_entry$`type of hemolysis`,
+                                    sep = sep)
+               }
             }
         } else
             hemolysis <- hemolysis_entries$`type of hemolysis`
@@ -402,6 +408,7 @@ authenticate <- function(username, password) {
 #'
 #' @return vector of character
 #'
+#' @importFrom rlang inform
 #' @importFrom taxizedb name2taxid
 #'
 #' @examples
@@ -424,11 +431,18 @@ authenticate <- function(username, password) {
 
     if (ncbi_id == "") {
         taxon_name <- .getTaxonName(bacdive_data, verbose = verbose)
-        ncbi_id <- tryCatch({
-            taxizedb::name2taxid(taxon_name)
-        }, error = function(e) {
-            results <- taxizedb::name2taxid(taxon_name, out_type = "summary")
-            results$id[1]
+        ncbi_id <- tryCatch(
+            taxizedb::name2taxid(taxon_name, verbose = verbose),
+            error = function(e) {
+                if (verbose) {
+                    msg <- paste("Input names are too ambiguous for",
+                                 "`name2taxid`, selecting from summary")
+                    rlang::inform(msg)
+                }
+                summary_of_taxids <- taxizedb::name2taxid(taxon_name,
+                                                          out_type = "summary",
+                                                          verbose = verbose)
+                summary_of_taxids$id[1]
         })
         ncbi_id <- ifelse(is.na(ncbi_id), "", ncbi_id)
     }
@@ -506,6 +520,7 @@ authenticate <- function(username, password) {
 #' Get parent NCBI id
 #'
 #' @param bacdive_data list of a BacDive data
+#' @param elements label
 #' @param verbose logical print messages. Default to FALSE.
 #'
 #' @return vector of character

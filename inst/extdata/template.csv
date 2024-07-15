@@ -15,7 +15,7 @@ Motility,"Morphology, cell morphology, motility",,
 Hemolysis,"Morphology, colony morphology",.getHemolysis,
 Colony_color,"Morphology, colony morphology, colony color",,
 Incubation_period,"Morphology, colony morphology, incubation period",,
-Cultivation_medium_used,"Culture and growth conditions, culture medium, name,",,
+Cultivation_medium_used,"Culture and growth conditions, culture medium, name,",,TRUE
 Culture_temperature_growth,"Culture and growth conditions, culture temp, growth",,TRUE
 Culture_temperature,"Culture and growth conditions, culture temp, temperature",,
 Culture_temperature_range,"Culture and growth conditions, culture temp, range",,
